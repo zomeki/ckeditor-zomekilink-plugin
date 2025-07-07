@@ -3,7 +3,7 @@
  * For licensing, see LICENSE.md or http://ckeditor.com/license
  */
 
-CKEDITOR.dialog.add( 'link', function( editor ) {
+CKEDITOR.dialog.add( 'zomekilink', function( editor ) {
 	var plugin = CKEDITOR.plugins.link;
 	// Handles the event when the "Target" selection box is changed.
 	var targetChanged = function() {
@@ -209,14 +209,14 @@ CKEDITOR.dialog.add( 'link', function( editor ) {
 
 			// For some browsers we set contenteditable="false" on anchors, making document.anchors not to include them, so we must traverse the links manually (#7893).
 			if ( CKEDITOR.plugins.link.emptyAnchorFix ) {
-				var links = editor.document.getElementsByTag( 'a' );
+				var links = editor.document.getElementsByTag( 'span' );
 				for ( i = 0, count = links.count(); i < count; i++ ) {
 					item = links.getItem( i );
 					if ( item.data( 'cke-saved-name' ) || item.hasAttribute( 'name' ) )
 						anchors.push({ name: item.data( 'cke-saved-name' ) || item.getAttribute( 'name' ), id: item.getAttribute( 'id' ) } );
 				}
 			} else {
-				var anchorList = new CKEDITOR.dom.nodeList( editor.document.$.anchors );
+				var anchorList = editor.document.getElementsByTag( 'span' );
 				for ( i = 0, count = anchorList.count(); i < count; i++ ) {
 					item = anchorList.getItem( i );
 					anchors[ i ] = { name: item.getAttribute( 'name' ), id: item.getAttribute( 'id' ) };
@@ -666,12 +666,8 @@ CKEDITOR.dialog.add( 'link', function( editor ) {
 					style: 'width : 100%;',
 					'items': [
 						[ commonLang.notSet, 'notSet' ],
-						[ linkLang.targetFrame, 'frame' ],
-						[ linkLang.targetPopup, 'popup' ],
 						[ commonLang.targetNew, '_blank' ],
-						[ commonLang.targetTop, '_top' ],
-						[ commonLang.targetSelf, '_self' ],
-						[ commonLang.targetParent, '_parent' ]
+						[ commonLang.targetSelf, '_self' ]
 						],
 					onChange: targetChanged,
 					setup: function( data ) {

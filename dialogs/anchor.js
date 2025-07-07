@@ -3,12 +3,12 @@
  * For licensing, see LICENSE.md or http://ckeditor.com/license
  */
 
-CKEDITOR.dialog.add( 'anchor', function( editor ) {
+CKEDITOR.dialog.add( 'cmsanchor', function( editor ) {
 	// Function called in onShow to load selected element.
 	var loadElements = function( element ) {
 			this._.selectedElement = element;
 
-			var attributeValue = element.data( 'cke-saved-name' );
+			var attributeValue = element.getAttribute( 'name' );
 			this.setValueOf( 'info', 'txtName', attributeValue || '' );
 		};
 
@@ -30,7 +30,7 @@ CKEDITOR.dialog.add( 'anchor', function( editor ) {
 
 			if ( this._.selectedElement ) {
 				if ( this._.selectedElement.data( 'cke-realelement' ) ) {
-					var newFake = createFakeAnchor( editor, editor.document.createElement( 'a', { attributes: attributes } ) );
+					var newFake = createFakeAnchor( editor, editor.document.createElement( 'span', { attributes: attributes } ) );
 					newFake.replace( this._.selectedElement );
 				} else
 					this._.selectedElement.setAttributes( attributes );
@@ -48,7 +48,7 @@ CKEDITOR.dialog.add( 'anchor', function( editor ) {
 						attributes[ 'data-cke-editable' ] = 1;
 					}
 
-					var anchor = editor.document.createElement( 'a', { attributes: attributes } );
+					var anchor = editor.document.createElement( 'span', { attributes: attributes } );
 
 					// Transform the anchor into a fake element for browsers that need it.
 					if ( CKEDITOR.plugins.link.fakeAnchor )
@@ -60,7 +60,7 @@ CKEDITOR.dialog.add( 'anchor', function( editor ) {
 						attributes[ 'class' ] = 'cke_anchor';
 
 					// Apply style.
-					var style = new CKEDITOR.style({ element: 'a', attributes: attributes } );
+					var style = new CKEDITOR.style({ element: 'span', attributes: attributes } );
 					style.type = CKEDITOR.STYLE_INLINE;
 					editor.applyStyle( style );
 				}
@@ -82,10 +82,10 @@ CKEDITOR.dialog.add( 'anchor', function( editor ) {
 					var realElement = CKEDITOR.plugins.link.tryRestoreFakeAnchor( editor, fullySelected );
 					realElement && loadElements.call( this, realElement );
 					this._.selectedElement = fullySelected;
-				} else if ( fullySelected.is( 'a' ) && fullySelected.hasAttribute( 'name' ) )
+				} else if ( fullySelected.is( 'span' ) && fullySelected.hasAttribute( 'name' ) )
 					loadElements.call( this, fullySelected );
 			} else {
-				partialSelected = CKEDITOR.plugins.link.getSelectedLink( editor );
+				partialSelected = CKEDITOR.plugins.link.getSelectedAnchor( editor );
 				if ( partialSelected ) {
 					loadElements.call( this, partialSelected );
 					selection.selectElement( partialSelected );

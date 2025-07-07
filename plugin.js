@@ -3,7 +3,7 @@
  * For licensing, see LICENSE.md or http://ckeditor.com/license
  */
 
-CKEDITOR.plugins.add( 'link', {
+CKEDITOR.plugins.add( 'zomekilink', {
 	requires: 'dialog,fakeobjects',
 	lang: 'af,ar,bg,bn,bs,ca,cs,cy,da,de,el,en,en-au,en-ca,en-gb,eo,es,et,eu,fa,fi,fo,fr,fr-ca,gl,gu,he,hi,hr,hu,id,is,it,ja,ka,km,ko,ku,lt,lv,mk,mn,ms,nb,nl,no,pl,pt,pt-br,ro,ru,si,sk,sl,sq,sr,sr-latn,sv,th,tr,ug,uk,vi,zh,zh-cn', // %REMOVE_LINE_CORE%
 	icons: 'anchor,anchor-rtl,link,unlink', // %REMOVE_LINE_CORE%
@@ -13,10 +13,10 @@ CKEDITOR.plugins.add( 'link', {
 		var iconPath = CKEDITOR.getUrl( this.path + 'images' + ( CKEDITOR.env.hidpi ? '/hidpi' : '' ) + '/anchor.png' ),
 			baseStyle = 'background:url(' + iconPath + ') no-repeat %1 center;border:1px dotted #00f;background-size:16px;';
 
-		var template = '.%2 a.cke_anchor,' +
-			'.%2 a.cke_anchor_empty' +
-			',.cke_editable.%2 a[name]' +
-			',.cke_editable.%2 a[data-cke-saved-name]' +
+		var template = '.%2 span.cke_anchor,' +
+			'.%2 span.cke_anchor_empty' +
+			',.cke_editable.%2 span[name]' +
+			',.cke_editable.%2 span[data-cke-saved-name]' +
 			'{' +
 				baseStyle +
 				'padding-%1:18px;' +
@@ -58,13 +58,13 @@ CKEDITOR.plugins.add( 'link', {
 			allowed = allowed.replace( ']', ',target,onclick]' );
 
 		// Add the link and unlink buttons.
-		editor.addCommand( 'link', new CKEDITOR.dialogCommand( 'link', {
+		editor.addCommand( 'link', new CKEDITOR.dialogCommand( 'zomekilink', {
 			allowedContent: allowed,
 			requiredContent: required
 		} ) );
-		editor.addCommand( 'anchor', new CKEDITOR.dialogCommand( 'anchor', {
-			allowedContent: 'a[!name,id]',
-			requiredContent: 'a[name]'
+		editor.addCommand( 'anchor', new CKEDITOR.dialogCommand( 'cmsanchor', {
+			allowedContent: 'span[!name,id]',
+			requiredContent: 'span[name]'
 		} ) );
 		editor.addCommand( 'unlink', new CKEDITOR.unlinkCommand() );
 		editor.addCommand( 'removeAnchor', new CKEDITOR.removeAnchorCommand() );
@@ -72,35 +72,42 @@ CKEDITOR.plugins.add( 'link', {
 		editor.setKeystroke( CKEDITOR.CTRL + 76 /*L*/, 'link' );
 
 		if ( editor.ui.addButton ) {
-			editor.ui.addButton( 'Link', {
+			editor.ui.addButton( 'CmsLink', {
 				label: editor.lang.link.toolbar,
 				command: 'link',
-				toolbar: 'links,10'
+				toolbar: 'links,10',
+				icon : this.path + 'icons/link.png'
 			});
-			editor.ui.addButton( 'Unlink', {
+			editor.ui.addButton( 'CmsUnlink', {
 				label: editor.lang.link.unlink,
 				command: 'unlink',
-				toolbar: 'links,20'
+				toolbar: 'links,20',
+				icon : this.path + 'icons/unlink.png'
 			});
-			editor.ui.addButton( 'Anchor', {
+			editor.ui.addButton( 'CmsAnchor', {
 				label: editor.lang.link.anchor.toolbar,
 				command: 'anchor',
-				toolbar: 'links,30'
+				toolbar: 'links,30',
+				icon : this.path + 'icons/anchor.png'
 			});
 		}
 
-		CKEDITOR.dialog.add( 'link', this.path + 'dialogs/link.js' );
-		CKEDITOR.dialog.add( 'anchor', this.path + 'dialogs/anchor.js' );
+		CKEDITOR.dialog.add( 'zomekilink', this.path + 'dialogs/link.js' );
+		CKEDITOR.dialog.add( 'cmsanchor', this.path + 'dialogs/anchor.js' );
 
 		editor.on( 'doubleclick', function( evt ) {
 			var element = CKEDITOR.plugins.link.getSelectedLink( editor ) || evt.data.element;
 
 			if ( !element.isReadOnly() ) {
 				if ( element.is( 'a' ) ) {
-					evt.data.dialog = ( element.getAttribute( 'name' ) && ( !element.getAttribute( 'href' ) || !element.getChildCount() ) ) ? 'anchor' : 'link';
+					evt.data.dialog = ( element.getAttribute( 'name' ) && ( !element.getAttribute( 'href' ) || !element.getChildCount() ) ) ? 'cmsanchor' : 'zomekilink';
 					editor.getSelection().selectElement( element );
-				} else if ( CKEDITOR.plugins.link.tryRestoreFakeAnchor( editor, element ) )
-					evt.data.dialog = 'anchor';
+				} else if ( CKEDITOR.plugins.link.tryRestoreFakeAnchor( editor, element ) ) {
+					evt.data.dialog = 'cmsanchor';
+				} else if (element.is( 'span' ) && element.getAttribute( 'name' ) ) {
+          evt.data.dialog = 'cmsanchor';
+          editor.getSelection().selectElement( element );
+				}
 			}
 		});
 
@@ -144,17 +151,18 @@ CKEDITOR.plugins.add( 'link', {
 					return null;
 
 				var anchor = CKEDITOR.plugins.link.tryRestoreFakeAnchor( editor, element );
+        var span = element.is( 'span' ) ? element : CKEDITOR.plugins.link.getSelectedAnchor( editor );
 
-				if ( !anchor && !( anchor = CKEDITOR.plugins.link.getSelectedLink( editor ) ) )
-					return null;
+        if ( !anchor && !span )
+          return null;
 
 				var menu = {};
 
-				if ( anchor.getAttribute( 'href' ) && anchor.getChildCount() )
+				if ( anchor && anchor.getAttribute( 'href' ) && anchor.getChildCount() )
 					menu = { link: CKEDITOR.TRISTATE_OFF, unlink: CKEDITOR.TRISTATE_OFF };
 
-				if ( anchor && anchor.hasAttribute( 'name' ) )
-					menu.anchor = menu.removeAnchor = CKEDITOR.TRISTATE_OFF;
+				if ( span && span.hasAttribute( 'name' ) )
+					menu = { anchor: CKEDITOR.TRISTATE_OFF, removeAnchor: CKEDITOR.TRISTATE_OFF };
 
 				return menu;
 			});
@@ -212,7 +220,7 @@ CKEDITOR.plugins.add( 'link', {
 
 		if ( pathFilters ) {
 			pathFilters.push( function( element, name ) {
-				if ( name == 'a' ) {
+				if ( name == 'span' ) {
 					if ( CKEDITOR.plugins.link.tryRestoreFakeAnchor( editor, element ) || ( element.getAttribute( 'name' ) && ( !element.getAttribute( 'href' ) || !element.getChildCount() ) ) ) {
 						return 'anchor';
 					}
@@ -260,6 +268,21 @@ CKEDITOR.plugins.link = {
 		}
 		return null;
 	},
+
+  getSelectedAnchor: function( editor ) {
+    var selection = editor.getSelection();
+    var selectedElement = selection.getSelectedElement();
+    if ( selectedElement && selectedElement.is( 'span' ) )
+      return selectedElement;
+
+    var range = selection.getRanges()[ 0 ];
+
+    if ( range ) {
+      range.shrink( CKEDITOR.SHRINK_TEXT );
+      return editor.elementPath( range.getCommonAncestor() ).contains( 'span', 1 );
+    }
+    return null;
+  },
 
 	/**
 	 * Opera and WebKit don't make it possible to select empty anchors. Fake
@@ -332,11 +355,11 @@ CKEDITOR.removeAnchorCommand.prototype = {
 		var sel = editor.getSelection(),
 			bms = sel.createBookmarks(),
 			anchor;
-		if ( sel && ( anchor = sel.getSelectedElement() ) && ( CKEDITOR.plugins.link.fakeAnchor && !anchor.getChildCount() ? CKEDITOR.plugins.link.tryRestoreFakeAnchor( editor, anchor ) : anchor.is( 'a' ) ) )
+		if ( sel && ( anchor = sel.getSelectedElement() ) && ( CKEDITOR.plugins.link.fakeAnchor && !anchor.getChildCount() ? CKEDITOR.plugins.link.tryRestoreFakeAnchor( editor, anchor ) : anchor.is( 'span' ) ) )
 			anchor.remove( 1 );
 		else {
-			if ( ( anchor = CKEDITOR.plugins.link.getSelectedLink( editor ) ) ) {
-				if ( anchor.hasAttribute( 'href' ) ) {
+			if ( ( anchor = CKEDITOR.plugins.link.getSelectedAnchor( editor ) ) ) {
+				if ( anchor.hasAttribute( 'name' ) ) {
 					anchor.removeAttributes( { name:1,'data-cke-saved-name':1 } );
 					anchor.removeClass( 'cke_anchor' );
 				} else
@@ -345,7 +368,7 @@ CKEDITOR.removeAnchorCommand.prototype = {
 		}
 		sel.selectBookmarks( bms );
 	},
-	requiredContent: 'a[name]'
+	requiredContent: 'span[name]'
 };
 
 CKEDITOR.tools.extend( CKEDITOR.config, {
